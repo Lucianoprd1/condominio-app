@@ -1,17 +1,22 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 
-// Componente que protegerá las rutas
-function ProtectedRoute({ children }) {
+const ProtectedRoute = ({ children, requiredRole }) => {
+  // Leer datos del usuario desde localStorage
   const userLoggedIn = JSON.parse(localStorage.getItem("loggedInUser"));
 
+  // Si no hay usuario logueado, redirigir al login
   if (!userLoggedIn) {
-    // Si no hay usuario logueado, redirige al login
     return <Navigate to="/login" />;
   }
 
-  // Si el usuario está logueado, muestra el contenido de la ruta
+  // Si se requiere un rol específico y el usuario no lo tiene, redirigir al dashboard general
+  if (requiredRole && userLoggedIn.role !== requiredRole) {
+    return <Navigate to="/dashboard" />;
+  }
+
+  // Si todo es correcto, mostrar el contenido de la ruta protegida
   return children;
-}
+};
 
 export default ProtectedRoute;

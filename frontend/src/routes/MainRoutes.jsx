@@ -1,44 +1,82 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 
-/// Pages
-import Home from "../pages/Home.jsx";
-import Reservation from "../pages/Reservation.jsx";
-import Dashboard from '../pages/Dashboard.jsx';
-/// Register and Login
+// Pages
+import Dashboard from "../pages/Dashboard.jsx";
+import AdminDashboard from "../pages/AdminDashboard.jsx";
+import CreatePublicationForm from "../Components/CreatePublicationForm.jsx";
 import Login from "../pages/Login.jsx";
 import Register from "../pages/Register.jsx";
+import UserProfile from "../pages/UserProfile.jsx";
+import UserExpenses from "../pages/UserExpenses.jsx";
+import UserHelp from "../pages/UserHelp.jsx";
 
 function MainRoutes() {
   return (
     <Router>
       <Routes>
-        {/* Proteger la ruta del Home */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reservation"
-          element={
-            <ProtectedRoute>
-              <Reservation />
-            </ProtectedRoute>
-          }
-        />
-        {/* Registro y Login */}
+        {/* Ruta predeterminada redirige al login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Rutas públicas */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path='/dashboard' element={<Dashboard />} />
-        <Route path='/perfil' element={<h1>Perfil del Usuario</h1>} />
-        <Route path='/gastos' element={<h1>Sección de Gastos</h1>} />
-        <Route path='/ayuda' element={<h1>Centro de Ayuda</h1>} />
-        <Route path='/pagar' element={<h1>Pagar</h1>} />
+
+        {/* Rutas protegidas para usuarios logueados */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/perfil"
+          element={
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/gastos"
+          element={
+            <ProtectedRoute>
+              <UserExpenses />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ayuda"
+          element={
+            <ProtectedRoute>
+              <UserHelp />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Rutas protegidas para administradores */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/publicaciones/nueva"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <CreatePublicationForm />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Ruta de error 404 */}
+        <Route path="*" element={<h1>Página no encontrada (404)</h1>} />
       </Routes>
     </Router>
   );
