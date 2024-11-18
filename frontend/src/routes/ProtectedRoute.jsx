@@ -10,9 +10,14 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" />;
   }
 
-  // Si se requiere un rol específico y el usuario no lo tiene, redirigir al dashboard general
+  // Si se requiere un rol específico y el usuario no lo tiene
   if (requiredRole && userLoggedIn.role !== requiredRole) {
-    return <Navigate to="/dashboard" />;
+    // Redirigir según el rol del usuario
+    return userLoggedIn.role === "admin" ? (
+      <Navigate to="/admin/dashboard" />
+    ) : (
+      <Navigate to="/dashboard" />
+    );
   }
 
   // Si todo es correcto, mostrar el contenido de la ruta protegida
