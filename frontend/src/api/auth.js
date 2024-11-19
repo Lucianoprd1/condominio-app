@@ -21,3 +21,5 @@ export const register = async (userData) => {
     throw error.response ? error.response.data : error.message;
   }
 };
+
+export const verifyTokenRequest = async () => axios.get(`/auth/verify`);

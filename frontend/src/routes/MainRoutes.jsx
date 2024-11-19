@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, BrowserRouter } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 
 // Pages
@@ -11,10 +11,14 @@ import Register from "../pages/Register.jsx";
 import UserProfile from "../pages/UserProfile.jsx";
 import UserExpenses from "../pages/UserExpenses.jsx";
 import UserHelp from "../pages/UserHelp.jsx";
+import { AuthProvider } from "../context/AuthContext.jsx";
+
+
 
 function MainRoutes() {
   return (
-    <Router>
+    <AuthProvider>
+      <BrowserRouter>
       <Routes>
         {/* Ruta predeterminada redirige al login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -78,7 +82,9 @@ function MainRoutes() {
         {/* Ruta de error 404 */}
         <Route path="*" element={<h1>Página no encontrada (404)</h1>} />
       </Routes>
-    </Router>
+    </BrowserRouter>
+    </AuthProvider>
+    
   );
 }
 

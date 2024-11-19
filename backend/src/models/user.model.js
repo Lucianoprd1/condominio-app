@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema(
             default: "user",
         },
     },
+    // timestamps agrega automáticamente createdAt y updatedAt
     { timestamps: true }
 );
 
