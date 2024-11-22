@@ -10,6 +10,8 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" />;
   }
 
+  console.log(userLoggedIn);
+
   // Si se requiere un rol específico y el usuario no lo tiene
   if (requiredRole && userLoggedIn.role !== requiredRole) {
     // Redirigir según el rol del usuario

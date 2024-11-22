@@ -1,7 +1,7 @@
 import API from "./axiosConfig";
 
 // Iniciar sesión
-export const login = async (email, password) => {
+export const loginRequest = async (email, password) => {
   try {
     const response = await API.post("/login", { email, password });
     return response.data;
@@ -12,7 +12,7 @@ export const login = async (email, password) => {
 };
 
 // Registrar usuario
-export const register = async (userData) => {
+export const registerRequest = async (userData) => {
   try {
     const response = await API.post("/register", userData);
     return response.data;
