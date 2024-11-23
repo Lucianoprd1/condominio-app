@@ -7,9 +7,6 @@ import Multa from "../models/multas.model.js";
 export const crearMulta = async (req, res) => {
     try {
 
-        if (req.role !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado" });
-        }
         const { userId, montoMulta, descripcion } = req.body;
        
     
@@ -38,9 +35,7 @@ export const obtenerMultas = async (req, res) => {
 //Obtener multas por id (solo admin)
 export const obtenerMultaId = async (req, res) => {
     try {
-        if (req.role !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado" });
-        }
+        
         const multa = await Multa.findById(req.params.id);
         if (!multa) {
             return res.status(404).json({ message: "Multa no encontrada" });
@@ -55,9 +50,7 @@ export const obtenerMultaId = async (req, res) => {
 //Actualizar multa
 export const actualizarMulta = async (req, res) => {
     try {
-        if (req.role !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado" });
-        }
+        
         const { montoMulta, descripcion, estadoPago } = req.body;
         const multa = await Multa.findById(req.params.id);
 
@@ -81,9 +74,7 @@ export const actualizarMulta = async (req, res) => {
 //Eliminar multa
 export const eliminarMulta = async (req, res) => {
     try {
-        if (req.role !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado" });
-        }
+        
         const multa = await Multa.findByIdAndDelete(req.params.id);
 
         if (!multa) {

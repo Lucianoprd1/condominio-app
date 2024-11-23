@@ -6,10 +6,6 @@ export const crearGasto = async (req, res) => {
   try {
       const { total, utilidades, mantencion, otros, mes, userId } = req.body;
 
-      // Validar que sea admin
-      if (req.role !== 'admin') {
-          return res.status(403).json({ message: 'Acceso denegado' });
-      }
 
       // Validar que el userId es válido
       if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
@@ -96,9 +92,7 @@ export const registrarPago = async (req, res) => {
 //registrar pago de gasto por id
 export const registrarPagoPorId = async (req, res) => {
     try {
-        if (req.role !== 'admin') {
-            return res.status(403).json({ message: 'Acceso denegado' });
-        }
+       
         const { id } = req.params;
 
         // Validar si el gasto existe

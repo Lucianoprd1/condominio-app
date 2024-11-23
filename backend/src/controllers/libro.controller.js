@@ -3,9 +3,7 @@ import Libro from "../models/libro.model.js";
 // Crear un evento en el libro (solo admin)
 export const crearEvento = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado" });
-        }
+        
         const { titulo, contenido } = req.body;
 
         if (!titulo || !contenido) {
@@ -32,9 +30,7 @@ export const crearEvento = async (req, res) => {
 // Obtener todos los eventos (solo admin)
 export const obtenerEventos = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado" });
-        }
+        
         const eventos = await Libro.find().sort({ fecha: -1 });
         res.json(eventos);
     } catch (error) {
@@ -46,9 +42,7 @@ export const obtenerEventos = async (req, res) => {
 // Editar un evento en el libro (solo admin)
 export const editarEvento = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado" });
-        }
+        
         const { id } = req.params;
         const { titulo, contenido } = req.body;
 
@@ -79,9 +73,7 @@ export const editarEvento = async (req, res) => {
 // Eliminar un evento en el libro (solo admin)
 export const eliminarEvento = async (req, res) => {
     try {
-        if (req.user.role !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado" });
-        }
+        
         const { id } = req.params;
 
         const eventoEliminado = await Libro.findByIdAndDelete(id);

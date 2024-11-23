@@ -9,10 +9,7 @@ export const register = async (req, res) => {
     const { name, email, password, role } = req.body;
 
     try {
-        // Verificar si el usuario autenticado es administrador
-        if (req.userRole !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado: solo un administrador puede registrar usuarios" });
-        }
+        
 
         // Verificar si el usuario ya existe
         const existingUser = await User.findOne({ email });
@@ -100,11 +97,6 @@ export const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Verificar si el usuario autenticado es administrador
-        if (req.userRole !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado: solo un administrador puede eliminar usuarios" });
-        }
-
         const user = await User.findByIdAndDelete(id);
         if (!user) {
             return res.status(404).json({ message: "Usuario no encontrado" });
@@ -120,10 +112,7 @@ export const deleteUser = async (req, res) => {
 // Obtener información de todos los residentes
 export const getResidents = async (req, res) => {
     try {
-        // Verificar si el usuario autenticado es administrador
-        if (req.userRole !== "admin") {
-            return res.status(403).json({ message: "Acceso denegado: solo un administrador puede obtener información de los residentes" });
-        }
+      
 
         // Consultar a todos los residentes
         const residents = await User.find({}, { password: 0, __v: 0 }); // Excluir contraseña y __v
