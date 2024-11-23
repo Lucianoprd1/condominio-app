@@ -38,6 +38,20 @@ const gastoSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    morosidad: {
+        type: Boolean,
+        default: false,
+    },
+    montoMorosidad: {
+        type: Number,
+        default: 0,
+    },
+    Observaciones: {
+        type: String,
+    },
 });
+
+// Índice compuesto para garantizar un solo registro por usuario y mes
+gastoSchema.index({ userId: 1, mes: 1 }, { unique: true });
 
 export default mongoose.model('Gasto', gastoSchema);

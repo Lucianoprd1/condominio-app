@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { TOKEN_SECRET } from "../config.js";
+import Gasto from "../models/gastos.model.js";
 
 // Registro de un nuevo usuario (solo administrador)
 export const register = async (req, res) => {
@@ -91,6 +92,99 @@ export const logout = (req, res) => {
         res.json({ message: "Cierre de sesión exitoso" });
     } catch (error) {
         console.error("Error en el cierre de sesión:", error);
+        res.status(500).json({ message: "Error interno del servidor" });
+    }
+};
+
+export const deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Verificar si el usuario autenticado es administrador
+        if (req.userRole !== "admin") {
+            return res.status(403).json({ message: "Acceso denegado: solo un administrador puede eliminar usuarios" });
+        }
+
+        const user = await User.findByIdAndDelete(id);
+        if (!user) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        res.json({ message: "Usuario eliminado correctamente" });
+    } catch (error) {
+        console.error("Error al eliminar el usuario:", error);
+        res.status(500).json({ message: "Error interno del servidor" });
+    }
+};
+
+// Obtener información de todos los residentes
+export const getResidents = async (req, res) => {
+    try {
+        // Verificar si el usuario autenticado es administrador
+        if (req.userRole !== "admin") {
+            return res.status(403).json({ message: "Acceso denegado: solo un administrador puede obtener información de los residentes" });
+        }
+
+        // Consultar a todos los residentes
+        const residents = await User.find({}, { password: 0, __v: 0 }); // Excluir contraseña y __v
+
+        if (!residents || residents.length === 0) {
+            return res.status(404).json({ message: "No se encontraron residentes registrados" });
+        }
+
+        // Retornar la información de los residentes
+        res.status(200).json({ message: "Información de los residentes obtenida con éxito", residents });
+    } catch (error) {
+        console.error("Error al obtener la información de los residentes:", error);
+        res.status(500).json({ message: "Error interno del servidor" });
+    }
+};
+
+
+
+export const getResidentExpenses = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Verificar si el ID es válido
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "ID de usuario inválido o faltante" });
+        }
+
+        // Verificar si el usuario autenticado es administrador
+        if (req.userRole !== "admin") {
+            return res.status(403).json({ message: "Acceso denegado: solo un administrador puede obtener esta información" });
+        }
+
+        // Obtener la información básica del residente
+        const resident = await User.findById(id, { name: 1, department: 1 });
+        if (!resident) {
+            return res.status(404).json({ message: "Residente no encontrado" });
+        }
+
+        // Obtener los gastos del residente
+        const gastos = await Gasto.find({ userId: id }, { monto: 1, morosidad: 1 });
+
+        // Calcular el monto total de morosidad
+        const montoMorosidad = gastos
+            .filter((gasto) => gasto.morosidad)
+            .reduce((total, gasto) => total + gasto.monto, 0);
+
+        // Responder con la información completa
+        res.status(200).json({
+            message: "Información del residente obtenida con éxito",
+            resident: {
+                name: resident.name,
+                department: resident.department,
+                gastos: gastos.map((gasto) => ({
+                    monto: gasto.monto,
+                    morosidad: gasto.morosidad,
+                })),
+                montoMorosidad, // Total de morosidad
+            },
+        });
+    } catch (error) {
+        console.error("Error al obtener la información del residente:", error);
         res.status(500).json({ message: "Error interno del servidor" });
     }
 };

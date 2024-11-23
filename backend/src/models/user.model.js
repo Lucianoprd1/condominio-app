@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { number } from "zod";
 
 const userSchema = new mongoose.Schema(
     {
@@ -20,6 +21,11 @@ const userSchema = new mongoose.Schema(
             type: String,
             enum: ["admin", "user"],
             default: "user",
+        },
+        departamento: {
+            type: Number,
+            required: true,
+            unique: true,
         },
     },
     // timestamps agrega automáticamente createdAt y updatedAt

@@ -11,6 +11,9 @@ export const registerSchema = z.object({
         required_error: "Password is required",
     }).min(6, "Password must be at least 6 characters long"),
     role: z.string().optional(),
+    departamento: z.number({
+        required_error: "Departamento is required",
+    }),
 });
 
 export const loginSchema = z.object({
