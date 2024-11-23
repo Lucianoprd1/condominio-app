@@ -14,6 +14,7 @@ import {
   editarObservaciones,
   eliminarObservaciones,
   registrarPagoPorId,
+  obtenerGastoPorId,
 } from '../controllers/gasto.controller.js';
 
 const router = Router();
@@ -25,7 +26,7 @@ router.post('/', authRequired, verifyRole('admin'), crearGasto);
 router.get('/', authRequired, obtenerGastos);
 
 //Consultar los gastos de un residente (solo administrador)
-router.get('/residente/:id', authRequired, verifyRole('admin'), obtenerGastos);
+router.get('/residente/:id', authRequired, verifyRole('admin'), obtenerGastoPorId);
 
 
 // Registrar el pago de un gasto (usuario autenticado)

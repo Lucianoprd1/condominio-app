@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.routes.js';
 import gastoRoutes from './routes/gasto.routes.js';
 import publicacionesRoutes from "./routes/publicaciones.routes.js";
 import multasRoutes from './routes/multas.routes.js';
+import libroRoutes from './routes/libro.routes.js';
 
 const app = express();
 app.use(cors(
@@ -21,4 +22,5 @@ app.use('/api', authRoutes);
 app.use('/api/gastos', gastoRoutes);
 app.use('/api/publicaciones', publicacionesRoutes);
 app.use('api/multas', multasRoutes);
+app.use('/api/libro', libroRoutes);
 export default app;

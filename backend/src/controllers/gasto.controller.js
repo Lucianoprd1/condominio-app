@@ -42,27 +42,29 @@ export const crearGasto = async (req, res) => {
   }
 };
 
-// Obtener gasto por id (solo para admin)
+// Obtener gastos por usuario (solo para admin)
 export const obtenerGastoPorId = async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+      const { id } = req.params;
 
-        // Validar que sea admin
-        if (req.role !== 'admin') {
-            return res.status(403).json({ message: 'Acceso denegado' });
-        }
+      // Validar si el id es un ObjectId válido
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+          return res.status(400).json({ message: 'ID de usuario inválido' });
+      }
 
-        const gasto = await Gasto.findById(id);
-        if (!gasto) {
-            return res.status(404).json({ message: 'Gasto no encontrado' });
-        }
+      // Buscar los gastos asociados al usuario
+      const gastos = await Gasto.find({ userId: id });
 
-        res.json(gasto);
-    } catch (error) {
-        console.error('Error al obtener el gasto:', error);
-        res.status(500).json({ message: 'Error interno del servidor' });
-    }
+      // Validar si no hay gastos asociados al usuario
+      if (!gastos || gastos.length === 0) {
+          return res.status(404).json({ message: 'No se encontraron gastos para este usuario' });
+      }
 
+      res.status(200).json(gastos);
+  } catch (error) {
+      console.error('Error al obtener los gastos del usuario:', error);
+      res.status(500).json({ message: 'Error interno del servidor' });
+  }
 };
 export const registrarPago = async (req, res) => {
     try {
