@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login, logout, verifyToken, deleteUser, getResidents, getResidentExpenses } from "../controllers/auth.controller.js";
+import { register, login, logout, deleteUser, getResidents, getResidentExpenses } from "../controllers/auth.controller.js";
 import { authRequired } from "../middlewares/validateToken.js";
 import { verifyRole } from "../middlewares/verifyRole.js";
 import { validateSchema } from "../middlewares/validator.middleware.js";
@@ -13,19 +13,32 @@ router.post("/register", authRequired, verifyRole("admin"),validateSchema(regist
 // Inicio de sesión
 router.post("/login",validateSchema(loginSchema) ,login);
 
-// Verificar token
-router.get("/verify", verifyToken);
+router.get("/me", authRequired, (req, res) => {
+    try {
+        // La información del usuario ya está en `req.userId` y `req.userRole`
+        res.json({
+            userId: req.userId,
+            role: req.userRole,
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Error al obtener la información del usuario" });
+    }
+});
+
+router.get("/verify", authRequired, (req, res) => {
+    res.json({ isValid: true });
+});
 
 // Cierre de sesión
 router.post("/logout", logout);
 
 // Eliminar un usuario (solo administrador)
-router.delete("/:id", authRequired, verifyRole("admin"), deleteUser);
+router.delete("/deleteUser/:id", authRequired, verifyRole("admin"), deleteUser);
 
 // Obtener información de todos los residentes
 router.get("/residents", authRequired, verifyRole("admin"), getResidents);
 
 // Obtener los gastos de un residente
-router.get("/resident/expenses", authRequired, verifyRole("admin") ,getResidentExpenses);
+router.get("/resident/:id/expenses", authRequired, verifyRole("admin") ,getResidentExpenses);
 
 export default router;

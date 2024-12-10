@@ -1,10 +1,16 @@
-import * as React from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { Box, Button, TextField } from "@mui/material";
-import axios from "axios"; // Importar Axios
+import { Box, Button, TextField, Alert } from "@mui/material";
+import axios from "axios";
 import BgIMG from "../assets/background.png";
 import LogoIMG from "../assets/logo-sgc.png";
+import { useAuth } from "../context/AuthContext";
+import API from "../api/axiosConfig";
+
+// Configure axios defaults
+//axios.defaults.baseURL = "http://localhost:3000";
+//axios.defaults.withCredentials = true;
 
 const theme = createTheme({
   palette: {
@@ -29,44 +35,49 @@ const theme = createTheme({
 
 export default function Login() {
   const navigate = useNavigate();
-  const [error, setError] = React.useState("");
-  const [success, setSuccess] = React.useState("");
+  const { setIsAuthenticated } = useAuth();
+  const [error, setError] = useState(null);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const email = data.get("email");
-    const password = data.get("password");
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-    if (!email || !password) {
-      setError("Por favor, complete todos los campos.");
-      return;
-    }
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    
     try {
-      // Enviar datos al backend
-      const response = await axios.post("http://localhost:3000/api/login", {
-        email,
-        password,
-      });
+      console.log("Login form data:", formData);
+      const response = await API.post("/login", formData);
+      console.log("Login response:", response.data);
 
-      const user = response.data;
+      if (response.data && response.data.user) {
+        // Verify setIsAuthenticated exists
+        if (typeof setIsAuthenticated !== 'function') {
+          console.error('setIsAuthenticated is not available');
+          return;
+        }
 
-      // Guardar información del usuario en el localStorage
-      localStorage.setItem("loggedInUser", JSON.stringify(user));
-
-      // Mostrar mensaje de éxito y redirigir según el rol
-      setSuccess("Accediendo al sistema...");
-      setError("");
-
-      setTimeout(() => {
-        navigate(user.role === "admin" ? "/admin/dashboard" : "/dashboard");
-      }, 2000);
-    } catch (err) {
-      // Manejo de errores
-      setError(
-        err.response?.data?.message || "Error al iniciar sesión. Inténtelo nuevamente."
-      );
+        setIsAuthenticated(true);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        const role = response.data.user.role;
+        console.log("Role:", role);
+        
+        // Force navigation after state update
+        setTimeout(() => {
+          navigate(role === "admin" ? "/admin" : "/dashboard");
+        }, 0);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError(error.response?.data?.message || "Error al iniciar sesión. verifique sus credenciales.");
     }
   };
 
@@ -89,13 +100,12 @@ export default function Login() {
             bgcolor: "rgba(255, 255, 255, 0.8)",
             boxShadow: 1,
             borderRadius: 3,
-            paddingTop: 1,
-            paddingBottom: 2,
-            paddingLeft: 5,
-            paddingRight: 5,
+            padding: 5,
             minWidth: 400,
-            minHeight: 700,
-            position: "relative",
+            minHeight: 600,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
         >
           <Box
@@ -104,7 +114,6 @@ export default function Login() {
               height: 200,
               borderRadius: "50%",
               overflow: "hidden",
-              margin: "0 auto",
               marginBottom: 2,
             }}
           >
@@ -118,28 +127,15 @@ export default function Login() {
               }}
             />
           </Box>
-          <Box
-            sx={{
-              width: 300,
-              height: 125,
-              textAlign: "center",
-              color: "primary.main",
-              fontSize: "h5.fontSize",
-              fontWeight: "bold",
-              margin: "0 auto",
-            }}
-          >
-            Sistema de Gestión de Condominos
-          </Box>
+
           <Box
             component="form"
             onSubmit={handleSubmit}
             sx={{
+              width: "100%",
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
               gap: 2,
-              minWidth: 300,
             }}
           >
             <TextField
@@ -150,11 +146,12 @@ export default function Login() {
               type="email"
               variant="filled"
               fullWidth
+              value={formData.email}
+              onChange={handleChange}
               sx={{
                 bgcolor: "white",
                 boxShadow: 1,
               }}
-              autoComplete="email"
             />
             <TextField
               required
@@ -164,64 +161,41 @@ export default function Login() {
               type="password"
               variant="filled"
               fullWidth
+              value={formData.password}
+              onChange={handleChange}
               sx={{
                 bgcolor: "white",
                 boxShadow: 1,
               }}
-              autoComplete="current-password"
             />
-            {success && (
-              <Box sx={{ color: "green", fontWeight: "bold", marginTop: 2 }}>
-                {success}
-              </Box>
-            )}
             {error && (
-              <Box
-                sx={{
-                  color: "red",
-                  fontWeight: "bold",
-                  marginTop: 2,
-                  padding: 2,
-                  border: "1px solid red",
-                  borderRadius: 1,
-                  width: "300px",
-                  textAlign: "center",
-                  fontSize: "12px",
-                }}
-              >
+              <Alert severity="error" sx={{ mt: 2 }}>
                 {error}
-              </Box>
+              </Alert>
             )}
             <Button
               type="submit"
               variant="contained"
               color="primary"
               sx={{
-                mt: 1,
-                width: "100%",
+                mt: 3,
                 height: "50px",
                 fontWeight: "bold",
-                boxShadow: 10,
               }}
             >
               Iniciar sesión
             </Button>
           </Box>
+          
           <Box
             sx={{
               mt: 4,
-              paddingBottom: 3,
-              width: "100%",
               textAlign: "center",
               color: "text.primary",
-              fontSize: "16px",
               fontWeight: "bold",
             }}
           >
-            ¿No tiene cuenta?{" "}
-            <Link to="/register" style={{ color: "#009688" }}>
-              Regístrese aquí.
-            </Link>
+
           </Box>
         </Box>
       </Box>

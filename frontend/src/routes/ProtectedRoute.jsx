@@ -1,27 +1,37 @@
-import React from "react";
-import { Navigate } from "react-router-dom";
+// src/routes/ProtectedRoute.jsx
+import { Navigate, Outlet } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import LoadingSpinner from "../Components/LoadingSpinner";
+import API from "../api/axiosConfig";
 
-const ProtectedRoute = ({ children, requiredRole }) => {
-  // Leer datos del usuario desde localStorage
-  const userLoggedIn = JSON.parse(localStorage.getItem("loggedInUser"));
+function ProtectedRoute() {
+  const { isAuthenticated, setIsAuthenticated } = useAuth();
+  const [loading, setLoading] = useState(true);
 
-  // Si no hay usuario logueado, redirigir al login
-  if (!userLoggedIn) {
-    return <Navigate to="/login" />;
+  useEffect(() => {
+    const verifyAuth = async () => {
+      try {
+        const response = await API.get("/verify");
+        if (response.data.isValid) {
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Auth verification failed:", error);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyAuth();
+  }, [setIsAuthenticated]);
+
+  if (loading) {
+    return <LoadingSpinner />;
   }
 
-  // Si se requiere un rol específico y el usuario no lo tiene
-  if (requiredRole && userLoggedIn.role !== requiredRole) {
-    // Redirigir según el rol del usuario
-    return userLoggedIn.role === "admin" ? (
-      <Navigate to="/admin/dashboard" />
-    ) : (
-      <Navigate to="/dashboard" />
-    );
-  }
-
-  // Si todo es correcto, mostrar el contenido de la ruta protegida
-  return children;
-};
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
+}
 
 export default ProtectedRoute;

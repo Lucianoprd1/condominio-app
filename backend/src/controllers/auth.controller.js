@@ -3,10 +3,11 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { TOKEN_SECRET } from "../config.js";
 import Gasto from "../models/gastos.model.js";
-
+import mongoose from "mongoose";
+import { setErrorMap } from "zod";
 // Registro de un nuevo usuario (solo administrador)
 export const register = async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, departamento } = req.body;
 
     try {
         
@@ -26,10 +27,11 @@ export const register = async (req, res) => {
             email,
             password: hashedPassword,
             role: role || "user", // Por defecto, los usuarios tendrán el rol "user"
+            departamento,
         });
 
         await newUser.save();
-        res.status(201).json({ message: "Usuario registrado con éxito", user: { name, email, role } });
+        res.status(201).json({ message: "Usuario registrado con éxito", user: { name, email, role , departamento} });
     } catch (error) {
         console.error("Error en el registro:", error);
         res.status(500).json({ message: "Error interno del servidor" });
@@ -38,9 +40,9 @@ export const register = async (req, res) => {
 
 // Inicio de sesión
 export const login = async (req, res) => {
-    const { email, password } = req.body;
-
+    
     try {
+        const { email, password } = req.body;
         // Buscar al usuario por correo
         const user = await User.findOne({ email });
         if (!user) {
@@ -54,33 +56,35 @@ export const login = async (req, res) => {
         }
 
         // Generar el token JWT
-        const token = jwt.sign({ userId: user._id, role: user.role }, TOKEN_SECRET, { expiresIn: "1h" });
+        const token = jwt.sign(
+            { userId: user._id, role: user.role }, 
+            TOKEN_SECRET, 
+            { expiresIn: "3h" }
+        );
 
         // Enviar el token en una cookie HTTP-only
-        res.cookie("token", token, { httpOnly: true, secure: false });
-        res.json({ message: "Inicio de sesión exitoso", token });
+        res.cookie("token", token, { 
+
+            httpOnly: true,
+            secure: false,
+            sameSite: "strict",
+            maxAge: 3 * 60 * 60 * 1000 
+        });
+        res.json({
+             message: "Inicio de sesión exitoso",
+             user: {
+                name: user.name,
+                role: user.role,
+                id: user._id,
+                email: user.email,
+            }
+         });
     } catch (error) {
         console.error("Error en el inicio de sesión:", error);
         res.status(500).json({ message: "Error interno del servidor" });
     }
 };
-export const verifyToken = async (req, res) => {
-    const { token } = req.cookies;
-    if (!token) return res.send(false);
-  
-    jwt.verify(token, TOKEN_SECRET, async (error, user) => {
-      if (error) return res.sendStatus(401);
-  
-      const userFound = await User.findById(user.id);
-      if (!userFound) return res.sendStatus(401);
-  
-      return res.json({
-        id: userFound._id,
-        username: userFound.username,
-        email: userFound.email,
-      });
-    });
-  };
+
 
 // Cierre de sesión
 export const logout = (req, res) => {
@@ -136,7 +140,7 @@ export const getResidentExpenses = async (req, res) => {
         const { id } = req.params;
 
         // Verificar si el ID es válido
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: "ID de usuario inválido o faltante" });
         }
 
@@ -145,29 +149,33 @@ export const getResidentExpenses = async (req, res) => {
             return res.status(403).json({ message: "Acceso denegado: solo un administrador puede obtener esta información" });
         }
 
-        // Obtener la información básica del residente
-        const resident = await User.findById(id, { name: 1, department: 1 });
+        // Consultar usuario y gastos en paralelo
+        const [resident, gastos] = await Promise.all([
+            User.findById(id, { name: 1, departamento: 1 }), // Información básica del residente
+            Gasto.find({ userId: id }, { total: 1, estadoPago: 1, monto: 1, morosidad: 1 }) // Gastos asociados al residente
+        ]);
+
+        // Validar si el residente existe
         if (!resident) {
             return res.status(404).json({ message: "Residente no encontrado" });
         }
 
-        // Obtener los gastos del residente
-        const gastos = await Gasto.find({ userId: id }, { monto: 1, morosidad: 1 });
-
         // Calcular el monto total de morosidad
-        const montoMorosidad = gastos
-            .filter((gasto) => gasto.morosidad)
-            .reduce((total, gasto) => total + gasto.monto, 0);
+        const montoMorosidad = gastos.reduce((total, gasto) => {
+            return gasto.morosidad ? total + gasto.monto : total;
+        }, 0);
 
         // Responder con la información completa
         res.status(200).json({
             message: "Información del residente obtenida con éxito",
             resident: {
                 name: resident.name,
-                department: resident.department,
+                departamento: resident.departamento,
                 gastos: gastos.map((gasto) => ({
-                    monto: gasto.monto,
-                    morosidad: gasto.morosidad,
+                    total: gasto.total, // Total del gasto
+                    estadoPago: gasto.estadoPago, // Estado de pago
+                    monto: gasto.monto, // Monto individual
+                    morosidad: gasto.morosidad, // Indicador de morosidad
                 })),
                 montoMorosidad, // Total de morosidad
             },

@@ -1,91 +1,215 @@
-import React from 'react';
-import Header from '../Components/Header'; // Importamos el Header
-import PaymentButton from '../Components/PaymentButton'; // Importamos el componente de Pago
-import ExpensesChart from '../Components/ExpensesChart'; // Importamos el gráfico de comparación de gastos
-import Publicaciones from '../Components/Publicaciones'; // Importamos el componente de Publicaciones
-import Footer from '../Components/Footer'; // Importamos el Footer
+// src/pages/Dashboard.jsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import Header from '../Components/Header';
+import PaymentButton from '../Components/PaymentButton';
+import ExpensesChart from '../Components/ExpensesChart';
+import Publicaciones from '../Components/Publicaciones';
+import Footer from '../Components/Footer';
+import API from '../api/axiosConfig';
 
 const Dashboard = () => {
-  const userName = 'Juanita Díaz'; // Nombre del usuario
-  const totalAmount = 100000; // Total a pagar, puede ser dinámico si lo necesitas
-
-  // Datos de los gastos actuales
-  const currentExpenses = [100000, 40000, 35000, 25000];
-
-  // Datos de los gastos del mes pasado
-  const previousExpenses = [95000, 42000, 30000, 27000];
-
-  // Datos de las publicaciones
-  const publicaciones = [
-    {
-      title: 'Mantenimiento de Ascensores',
-      content: 'Se realizará un mantenimiento de los ascensores el próximo lunes 20 de octubre.',
-      date: '15 de octubre, 2024',
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const [gastos, setGastos] = useState({
+    currentExpenses: {
+      total: 0,
+      utilidades: 0,
+      mantencion: 0,
+      otros: 0,
+      mes: ''
     },
-    {
-      title: 'Nueva Normativa de Seguridad',
-      content: 'Se ha actualizado la normativa de seguridad del edificio. Por favor, revisarla en el portal de residentes.',
-      date: '12 de octubre, 2024',
-    },
-    {
-      title: 'Reunión de Condominio',
-      content: 'Habrá una reunión de condominio el viernes 25 de octubre en el salón comunal.',
-      date: '10 de octubre, 2024',
-    },
-  ];
+    previousExpenses: {
+      total: 0,
+      utilidades: 0,
+      mantencion: 0,
+      otros: 0,
+      mes: ''
+    }
+  });
+  const [publicaciones, setPublicaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Get expenses
+        const gastosResponse = await API.get('/gastos');
+        console.log('Gastos response:', gastosResponse.data);
+
+        if (gastosResponse.data && gastosResponse.data.length > 0) {
+          // Get current month expenses (most recent)
+          const sortedGastos = gastosResponse.data.sort((a, b) => 
+            new Date(b.fechaRegistro) - new Date(a.fechaRegistro)
+          );
+          
+          const currentMonthExpense = sortedGastos[0];
+          const previousMonthExpense = sortedGastos[1] || null;
+
+          setGastos({
+            currentExpenses: {
+              total: currentMonthExpense.total || 0,
+              utilidades: currentMonthExpense.utilidades || 0,
+              mantencion: currentMonthExpense.mantencion || 0,
+              otros: currentMonthExpense.otros || 0,
+              mes: currentMonthExpense.mes || '',
+              estadoPago: currentMonthExpense.estadoPago
+            },
+            previousExpenses: previousMonthExpense ? {
+              total: previousMonthExpense.total || 0,
+              utilidades: previousMonthExpense.utilidades || 0,
+              mantencion: previousMonthExpense.mantencion || 0,
+              otros: previousMonthExpense.otros || 0,
+              mes: previousMonthExpense.mes || '',
+              estadoPago: previousMonthExpense.estadoPago
+            } : {
+              total: 0,
+              utilidades: 0,
+              mantencion: 0,
+              otros: 0,
+              mes: '',
+              estadoPago: ''
+            }
+          });
+        }
+
+        // Get publications
+        const publicacionesResponse = await API.get('/publicaciones');
+        console.log('Publicaciones response:', publicacionesResponse.data);
+        
+        if (publicacionesResponse.data) {
+          setPublicaciones(publicacionesResponse.data);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-between">
-      {/* Header con saludo y botones */}
-      <Header userName={userName} />
+      <Header 
+      userName={user?.name || user?.email|| 'Usuario'} 
+      onLogout={logout} 
+      />
 
-      <main className="mt-8 max-w-5xl mx-auto px-4">
-        <h2 className="text-3xl font-bold mb-6 text-gray-900">Detalles de gastos</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <main className="mt-8 max-w-5xl mx-auto px-4 mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-6">Detalles de gastos</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Current Month Expenses */}
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center">
-              <p className="text-xl font-semibold text-gray-800">Total a Pagar</p>
-              <span className="text-lg text-gray-900">$100.000</span>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">
+                Gastos del mes: {gastos.currentExpenses.mes}
+              </h3>
+              <span className={`px-2 py-1 rounded text-sm ${
+                gastos.currentExpenses.estadoPago === 'pagado' 
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {gastos.currentExpenses.estadoPago === 'pagado' ? 'Pagado' : 'Pendiente'}
+              </span>
             </div>
-            <p className="text-sm text-green-600">+5%</p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center">
-              <p className="text-xl font-semibold text-gray-800">Utilidades</p>
-              <span className="text-lg text-gray-900">$40.000</span>
+            <div className="space-y-4">
+              <div className="flex justify-between border-b pb-2">
+                <span>Utilidades:</span>
+                <span className="font-medium">${gastos.currentExpenses.utilidades.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span>Mantención:</span>
+                <span className="font-medium">${gastos.currentExpenses.mantencion.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span>Otros:</span>
+                <span className="font-medium">${gastos.currentExpenses.otros.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="font-bold">Total:</span>
+                <span className="font-bold text-lg">${gastos.currentExpenses.total.toLocaleString()}</span>
+              </div>
             </div>
-            <p className="text-sm text-red-600">-2%</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center">
-              <p className="text-xl font-semibold text-gray-800">Mantención</p>
-              <span className="text-lg text-gray-900">$35.000</span>
+
+          {/* Previous Month Expenses */}
+          {gastos.previousExpenses.mes && (
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">
+                  Mes anterior: {gastos.previousExpenses.mes}
+                </h3>
+                <span className={`px-2 py-1 rounded text-sm ${
+                  gastos.previousExpenses.estadoPago === 'pagado' 
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {gastos.previousExpenses.estadoPago === 'pagado' ? 'Pagado' : 'Pendiente'}
+                </span>
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between border-b pb-2">
+                  <span>Utilidades:</span>
+                  <span className="font-medium">${gastos.previousExpenses.utilidades.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span>Mantención:</span>
+                  <span className="font-medium">${gastos.previousExpenses.mantencion.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span>Otros:</span>
+                  <span className="font-medium">${gastos.previousExpenses.otros.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between pt-2">
+                  <span className="font-bold">Total:</span>
+                  <span className="font-bold text-lg">${gastos.previousExpenses.total.toLocaleString()}</span>
+                </div>
+              </div>
             </div>
-            <p className="text-sm text-green-600">+8%</p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center">
-              <p className="text-xl font-semibold text-gray-800">Otros</p>
-              <span className="text-lg text-gray-900">$25.000</span>
-            </div>
-            <p className="text-sm text-green-600">+12%</p>
-          </div>
+          )}
         </div>
 
-        {/* Componente de Pago */}
-        <PaymentButton totalAmount={totalAmount} />
+        {gastos.currentExpenses.estadoPago === 'pendiente' && (
+          <div className="mb-8">
+            <PaymentButton totalAmount={gastos.currentExpenses.total} />
+          </div>
+        )}
 
-        {/* Gráfico de comparación de gastos */}
-        <ExpensesChart currentData={currentExpenses} previousData={previousExpenses} />
+        <div className="mb-8">
+          <ExpensesChart 
+            currentData={[
+              gastos.currentExpenses.total,
+              gastos.currentExpenses.utilidades,
+              gastos.currentExpenses.mantencion,
+              gastos.currentExpenses.otros
+            ]}
+            previousData={[
+              gastos.previousExpenses.total,
+              gastos.previousExpenses.utilidades,
+              gastos.previousExpenses.mantencion,
+              gastos.previousExpenses.otros
+            ]}
+          />
+        </div>
 
-        {/* Publicaciones */}
         <Publicaciones posts={publicaciones} />
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
 };
-// Exportamos el componente Dashboard
+
 export default Dashboard;

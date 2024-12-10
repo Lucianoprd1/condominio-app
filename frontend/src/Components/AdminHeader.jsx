@@ -1,32 +1,27 @@
-// src/Components/Header.jsx
+// src/Components/AdminHeader.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import profileImage from '../assets/profile.png';
 
-const Header = ({ userName, onLogout }) => {
+const AdminHeader = ({ onLogout }) => {
   return (
-    <header className="flex justify-between items-center py-4 bg-gray-800 text-white px-6 shadow-md">
+    <header className="flex justify-between items-center py-4 bg-gray-900 text-white px-6 shadow-md">
       <div className="flex items-center space-x-4">
         <img
           src={profileImage}
-          alt="profile"
+          alt="admin-profile"
           className="w-10 h-10 rounded-full"
         />
-        <h1 className="text-xl font-bold">Bienvenido(a), {userName}</h1>
+        <h1 className="text-xl font-bold">Panel Administrativo</h1>
       </div>
       <div className="flex items-center space-x-4">
         <Link
-          to="/dashboard"
-          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+          to="/admin"
+          className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition"
         >
-          Inicio
+          Dashboard
         </Link>
-        <Link
-          to="/gastos"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          Gastos
-        </Link>
+       
         <button
           onClick={onLogout}
           className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
@@ -38,4 +33,4 @@ const Header = ({ userName, onLogout }) => {
   );
 };
 
-export default Header;
+export default AdminHeader;

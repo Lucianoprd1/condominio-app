@@ -25,7 +25,12 @@ export const crearMulta = async (req, res) => {
 //Obtener multas por usuario
 export const obtenerMultas = async (req, res) => {
     try {
-        const multas = await Multa.find({ userId: req.userId });
+        const { userId } = req.query;
+        
+        // Si hay userId en la consulta, filtrar por ese usuario
+        const query = userId ? { userId } : {};
+        
+        const multas = await Multa.find(query).sort({ fechaRegistro: -1 });
         res.json(multas);
     } catch (error) {
         console.error("Error al obtener multas:", error);
@@ -35,7 +40,6 @@ export const obtenerMultas = async (req, res) => {
 //Obtener multas por id (solo admin)
 export const obtenerMultaId = async (req, res) => {
     try {
-        
         const multa = await Multa.findById(req.params.id);
         if (!multa) {
             return res.status(404).json({ message: "Multa no encontrada" });

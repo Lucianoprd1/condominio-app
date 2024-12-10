@@ -25,7 +25,7 @@ router.get('/:id', authRequired, verifyRole('admin'), obtenerMultaId);
 router.put('/:id', authRequired, verifyRole('admin'), actualizarMulta);
 
 // Registrar el pago de una multa (usuario autenticado)
-router.put('/pagar/:id', authRequired, registrarPagoMulta);
+router.put('/pagar', authRequired, registrarPagoMulta);
 
 //eliminar multa (solo admin)
 router.delete('/:id', authRequired, verifyRole('admin'), eliminarMulta);
