@@ -468,3 +468,185 @@ export const reporteResidentesPagoPend = async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
+// Listar todos los residentes con sus gastos comunes por mes (nombre, depto y monto )y que calcule el total.
+export const listarGGCCResidentes = async (req, res) => {
+  try {
+    const residentesConGastos = await Gasto.aggregate([
+      // Relacionar la colección gastos con la colección de usuarios
+      {
+        $lookup: {
+          from: "users", // Nombre de la colección de usuarios
+          localField: "userId", // Campo en la colección de gastos
+          foreignField: "_id", // Campo en la colección de usuarios
+          as: "usuario", // Campo donde se guardará el resultado del join
+        },
+      },
+      // Asegurar que el usuario esté en formato plano (descomponer array)
+      { $unwind: "$usuario" },
+      // Agrupar por usuario
+      {
+        $group: {
+          _id: "$userId", // Agrupar por userId
+          nombre: { $first: "$usuario.nombre" }, // Nombre del usuario
+          email: { $first: "$usuario.email" }, // Email del usuario
+          gastosPorMes: {
+            $push: {
+              mes: "$mes", // Mes del gasto
+              estadoPago: "$estadoPago", // Estado del pago
+              total: "$total", // Total del gasto
+            },
+          },
+          totalPendiente: {
+            $sum: {
+              $cond: [{ $eq: ["$estadoPago", "pendiente"] }, "$total", 0],
+            },
+          },
+          totalPagado: {
+            $sum: {
+              $cond: [{ $eq: ["$estadoPago", "pagado"] }, "$total", 0],
+            },
+          },
+        },
+      },
+      // Ordenar los gastos por mes en el resultado
+      {
+        $project: {
+          _id: 0,
+          userId: "$_id",
+          nombre: 1,
+          email: 1,
+          totalPendiente: 1,
+          totalPagado: 1,
+          gastosPorMes: {
+            $sortArray: {
+              input: "$gastosPorMes",
+              sortBy: { mes: 1 }, // Ordenar los meses en orden ascendente
+            },
+          },
+        },
+      },
+    ]);
+
+    // Validar si no se encontraron registros
+    if (!residentesConGastos || residentesConGastos.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No se encontraron residentes con gastos comunes" });
+    }
+
+    res.status(200).json(residentesConGastos);
+  } catch (error) {
+    console.error(
+      "Error al listar los residentes con sus gastos comunes:",
+      error
+    );
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+//  Mismo listado anterior, pero agreganto totales del condominio.
+export const listarGGCCResidentesCondominio = async (req, res) => {
+  try {
+    const residentesConGastos = await Gasto.aggregate([
+      // Relacionar la colección gastos con la colección de usuarios
+      {
+        $lookup: {
+          from: "users", // Nombre de la colección de usuarios
+          localField: "userId", // Campo en la colección de gastos
+          foreignField: "_id", // Campo en la colección de usuarios
+          as: "usuario", // Campo donde se guardará el resultado del join
+        },
+      },
+      // Asegurar que el usuario esté en formato plano (descomponer array)
+      { $unwind: "$usuario" },
+      // Agrupar por usuario
+      {
+        $group: {
+          _id: "$userId", // Agrupar por userId
+          nombre: { $first: "$usuario.nombre" }, // Nombre del usuario
+          email: { $first: "$usuario.email" }, // Email del usuario
+          gastosPorMes: {
+            $push: {
+              mes: "$mes", // Mes del gasto
+              estadoPago: "$estadoPago", // Estado del pago
+              total: "$total", // Total del gasto
+            },
+          },
+          totalPendiente: {
+            $sum: {
+              $cond: [{ $eq: ["$estadoPago", "pendiente"] }, "$total", 0],
+            },
+          },
+          totalPagado: {
+            $sum: {
+              $cond: [{ $eq: ["$estadoPago", "pagado"] }, "$total", 0],
+            },
+          },
+        },
+      },
+      // Ordenar los gastos por mes en el resultado
+      {
+        $project: {
+          _id: 0,
+          userId: "$_id",
+          nombre: 1,
+          email: 1,
+          totalPendiente: 1,
+          totalPagado: 1,
+          gastosPorMes: {
+            $sortArray: {
+              input: "$gastosPorMes",
+              sortBy: { mes: 1 }, // Ordenar los meses en orden ascendente
+            },
+          },
+        },
+      },
+    ]);
+
+    // Calcular totales globales
+    const totalGlobal = await Gasto.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalGlobalPendiente: {
+            $sum: {
+              $cond: [{ $eq: ["$estadoPago", "pendiente"] }, "$total", 0],
+            },
+          },
+          totalGlobalPagado: {
+            $sum: {
+              $cond: [{ $eq: ["$estadoPago", "pagado"] }, "$total", 0],
+            },
+          },
+        },
+      },
+    ]);
+
+    // Si no se encontraron residentes
+    if (!residentesConGastos || residentesConGastos.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No se encontraron residentes con gastos comunes" });
+    }
+
+    // Combinar datos de residentes con los totales globales
+    const response = {
+      residentes: residentesConGastos,
+      totalesGlobales: {
+        "GG.CC. Condominio - Total Pendiente":
+          totalGlobal[0]?.totalGlobalPendiente || 0,
+        "GG.CC. Condominio - Total Pagado":
+          totalGlobal[0]?.totalGlobalPagado || 0,
+      },
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error(
+      "Error al listar los residentes con sus gastos comunes:",
+      error
+    );
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};

@@ -1,6 +1,14 @@
 import { Router } from "express";
 import { authRequired } from "../middlewares/validateToken.js";
 import { verifyRole } from "../middlewares/verifyRole.js";
+import { validateSchema } from "../middlewares/validator.middleware.js";
+import {
+  crearGastoSchema,
+  actualizarGastoSchema,
+  registrarPagoSchema,
+  observacionesSchema,
+  idSchema,
+} from "../schemas/gasto.schema.js";
 import {
   crearGasto,
   registrarPago,
@@ -18,6 +26,8 @@ import {
   obtenerPagosPendById,
   obtenerPagosCancelById,
   reporteResidentesPagoPend,
+  listarGGCCResidentes,
+  listarGGCCResidentesCondominio,
 } from "../controllers/gasto.controller.js";
 
 const router = Router();
@@ -102,6 +112,22 @@ router.get(
   authRequired,
   verifyRole("admin"),
   reporteResidentesPagoPend
+);
+
+// Listar todos los residentes con sus gastos comunes por mes (nombre, depto y monto )y que calcule el total.
+router.get(
+  "/listarGGCCResidentes",
+  authRequired,
+  verifyRole("admin"),
+  listarGGCCResidentes
+);
+
+// Mismo listado anterior, pero agreganto totales del condominio.
+router.get(
+  "/listarGGCCCondominio",
+  authRequired,
+  verifyRole("admin"),
+  listarGGCCResidentesCondominio
 );
 
 export default router;

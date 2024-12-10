@@ -1,11 +1,17 @@
 import { Router } from "express";
 import { authRequired } from "../middlewares/validateToken.js";
 import { verifyRole } from "../middlewares/verifyRole.js";
+import { validateSchema } from "../middlewares/validator.middleware.js";
 import {
-    crearPublicacion,
-    obtenerPublicaciones,
-    editarPublicacion,
-    eliminarPublicacion,
+  crearPublicacionSchema,
+  editarPublicacionSchema,
+  idSchema,
+} from "../schemas/publicaciones.schema.js";
+import {
+  crearPublicacion,
+  obtenerPublicaciones,
+  editarPublicacion,
+  eliminarPublicacion,
 } from "../controllers/publicaciones.controller.js";
 
 const router = Router();
